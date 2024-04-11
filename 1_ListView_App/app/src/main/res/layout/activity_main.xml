@@ -9,23 +9,12 @@
     tools:context=".MainActivity">
 
 
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/Fragment1"
-        android:name="com.example.a1_listview_app.BlankFragment"
+    <ListView
+        android:id="@+id/listview"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        tools:layout_editor_absoluteX="168dp"
-        tools:layout_editor_absoluteY="340dp" />
-
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/Fragment2"
-        android:name="com.example.a1_listview_app.BlankFragment2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        tools:layout_editor_absoluteX="181dp"
-        tools:layout_editor_absoluteY="657dp" />
+        android:layout_height="match_parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:layout_editor_absoluteX="1dp" />
 
 
 </LinearLayout>
