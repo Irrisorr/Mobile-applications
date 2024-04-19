@@ -3,14 +3,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/holo_red_light"
-    tools:context=".FirstFragment">
+    android:background="@android:color/holo_blue_light"
+    tools:context=".SecondFragment">
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/button1"
+        android:id="@+id/button2"
         android:layout_gravity="center"
-        android:text="button from 1st fragment"/>
+        android:text="button from 2nd fragment"/>
 
 </FrameLayout>
