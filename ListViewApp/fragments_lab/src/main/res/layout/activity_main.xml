@@ -6,14 +6,14 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".MainActivity">
+    tools:context="com.example.fragments_lab.MainActivity">
 
     <androidx.fragment.app.FragmentContainerView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/Fragment1"
         android:layout_weight="1"
-        android:name="com.example.listviewapp.FirstFragment"
+        android:name="com.example.fragments_lab.FirstFragment"
         tools:layout_editor_absoluteX="168dp"
         tools:layout_editor_absoluteY="340dp"
         />
@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:id="@+id/Fragment2"
         android:layout_weight="1"
-        android:name="com.example.listviewapp.SecondFragment"
+        android:name="com.example.fragments_lab.SecondFragment"
         tools:layout_editor_absoluteX="181dp"
         tools:layout_editor_absoluteY="657dp"
         />

@@ -42,19 +42,20 @@ class MainActivity : AppCompatActivity() {
 
         binding.listview.isClickable = true
         binding.listview.adapter = MyAdapter(this, userArrayList)
-        binding.listview.setOnItemClickListener {parent, view, position, id ->
+        binding.listview.setOnItemClickListener { parent, view, position, id ->
+            if (position < title.size && position < phone.size && position < country.size && position < imageId.size) {
+                val titleValue = title[position]
+                val phoneValue = phone[position]
+                val countryValue = country[position]
+                val imageIdValue = imageId[position]
 
-            val title = title[position]
-            val phone = phone[position]
-            val country = country[position]
-            val imageId = imageId[position]
-
-            val intent = Intent(this, UserActivity::class.java)
-            intent.putExtra("title", title)
-            intent.putExtra("phone", phone)
-            intent.putExtra("country", country)
-            intent.putExtra("imageId", imageId)
-            startActivity(intent)
+                val intent = Intent(this, UserActivity::class.java)
+                intent.putExtra("title", titleValue)
+                intent.putExtra("phone", phoneValue)
+                intent.putExtra("country", countryValue)
+                intent.putExtra("imageId", imageIdValue)
+                startActivity(intent)
+            }
         }
 
     }

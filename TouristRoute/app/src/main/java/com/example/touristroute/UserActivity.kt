@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.example.touristroute.databinding.ActivityUserBinding
 
-class UserActivity : AppCompatActivity {
+class UserActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityUserBinding
 
@@ -13,14 +13,14 @@ class UserActivity : AppCompatActivity {
         binding = ActivityUserBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val title = intent.getStringExtra("title")
-        val phone = intent.getStringExtra("phone")
-        val country = intent.getStringExtra("country")
+        val title = intent.getStringExtra("title") ?: ""
+        val phone = intent.getStringExtra("phone") ?: ""
+        val country = intent.getStringExtra("country") ?: ""
         val imageId = intent.getIntExtra("imageId", R.drawable.icon1)
 
         binding.titleProfile.text = title
         binding.phone.text = phone
-        binding.countryProfile.text = country
+        binding.country.text = country
         binding.routeImg.setImageResource(imageId)
 
     }

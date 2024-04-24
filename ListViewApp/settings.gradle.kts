@@ -21,4 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "ListViewApp"
 include(":app")
- 
+include(":fragments_lab")
+include(":listandrecycleview_lab")

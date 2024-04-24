@@ -14,13 +14,54 @@
         android:layout_marginTop="20dp"/>
 
     <TextView
+        android:id="@+id/title_profile"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/title_profile"
-        android:layout_centerHorizontal="true"
         android:layout_below="@+id/route_img"
-        android:layout_marginTop="20dp"
-        android:textColor="@color/black"
-        android:text="title_profile"/>
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="40dp"
+        android:text="Mike"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <View
+        android:id="@+id/line1"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@+id/title_profile"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="20dp"
+        android:background="@android:color/darker_gray" />
+
+    <TextView
+        android:id="@+id/phone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/line1"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:text="+49434432343"
+        android:textSize="16sp" />
+
+    <View
+        android:id="@+id/line2"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@+id/phone"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="20dp"
+        android:background="@android:color/darker_gray" />
+
+    <TextView
+        android:id="@+id/country"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/line2"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="10dp"
+        android:text="Germany"
+        android:textSize="16sp" />
 
 </RelativeLayout>
