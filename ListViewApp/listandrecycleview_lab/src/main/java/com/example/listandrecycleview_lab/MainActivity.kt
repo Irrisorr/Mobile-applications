@@ -1,7 +1,9 @@
 package com.example.listandrecycleview_lab
 
+import android.content.Intent
 import android.os.Bundle
 import android.widget.ArrayAdapter
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -23,5 +25,10 @@ class MainActivity : AppCompatActivity() {
 
         arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, languages)
         mListView.adapter = arrayAdapter
+
+        mListView.setOnItemClickListener { parent, _, position, _ ->
+            val selectedItem = parent.getItemAtPosition(position).toString()
+            Toast.makeText(applicationContext,"Wybrałeś $selectedItem",Toast.LENGTH_SHORT).show()
+        }
     }
 }

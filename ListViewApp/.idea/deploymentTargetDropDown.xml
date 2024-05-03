@@ -5,6 +5,12 @@
       <entry key="app">
         <State />
       </entry>
+      <entry key="fragments_lab">
+        <State />
+      </entry>
+      <entry key="listandrecycleview_lab">
+        <State />
+      </entry>
     </value>
   </component>
 </project>
