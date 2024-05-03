@@ -20,71 +20,41 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.jetpackcompose.ui.theme.ListViewAppTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
         setContent {
-            ListViewAppTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-
-                    Column {
-                        Greeting(
-                            name = "Android",
-                            modifier = Modifier.padding(innerPadding)
-                        )
-                        ButtonClick()
-                        Buttons()
-                    }
-                }
-
-            }
+            val navController = rememberNavController()
+            Navig(navController = navController)
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ListViewAppTheme {
-        Greeting("Android")
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ButtonClick() {
-    var clickCounter = remember { mutableStateOf(0) }
+fun Main (onMainClick: () -> Unit = {}) {
     Column {
-        Button(onClick = {clickCounter.value++ }) {
-            Text(text = "Kliknięto: ${clickCounter.value}")
+        Text(text = "Main")
+        Button(onClick = onMainClick) {
+            Text(text = "To second screen")
         }
     }
 }
 
 @Composable
-fun Buttons(text: String = "Kliknij") {
-    var my_text by remember { mutableStateOf(text) }
-    Column{
-        FilledTonalButton(onClick = { my_text= "Ok" },
-            Modifier.fillMaxWidth())
-        {
-            Text(text = my_text)
-        }
+fun Navig(navController: NavHostController) {
+    NavHost(navController = navController, startDestination = "main") {
+            composable(route = "main") {
+                Main(onMainClick = { navController.navigate(route = "second")} )
+            }
+            composable(route = "second") {
+                Second()
+            }
     }
 }
-@Preview
-@Composable
-fun ButtronPrev() {
-    Buttons()
-}
+
