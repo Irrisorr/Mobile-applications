@@ -1,5 +1,6 @@
 package com.example.listviewapp
 
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -17,8 +18,15 @@ class AttractionDetailsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_attraction_details, container, false)
+        val orientation = resources.configuration.orientation
+        val layoutResId = if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            R.layout.fragment_attraction_details_land
+        } else {
+            R.layout.fragment_attraction_details
+        }
+        return inflater.inflate(layoutResId, container, false)
     }
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
