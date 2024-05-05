@@ -36,4 +36,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
+    <fragment
+        android:id="@+id/stopwatch_fragment"
+        android:name="com.example.listviewapp.StopwatchFragment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
 </LinearLayout>
