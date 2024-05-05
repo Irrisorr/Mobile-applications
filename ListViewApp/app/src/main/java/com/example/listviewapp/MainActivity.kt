@@ -11,8 +11,22 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        supportFragmentManager.beginTransaction()
-            .add(R.id.fragment_container, AttractionsFragment())
-            .commit()
+        if (savedInstanceState != null) {
+            val currentFragment = supportFragmentManager.getFragment(savedInstanceState, "currentFragment")
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, currentFragment!!)
+                .commit()
+        } else {
+            supportFragmentManager.beginTransaction()
+                .add(R.id.fragment_container, AttractionsFragment())
+                .commit()
+        }
     }
+
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        supportFragmentManager.putFragment(outState, "currentFragment", supportFragmentManager.findFragmentById(R.id.fragment_container)!!)
+    }
+
 }

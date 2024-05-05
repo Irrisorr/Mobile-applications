@@ -30,7 +30,6 @@ class AttractionsAdapter(private val attractions: List<Attraction>) :
         holder.descriptionTextView.text = attraction.description
         holder.imageView.setImageResource(attraction.imageResId)
 
-        // Обработчик нажатия на элемент списка
         holder.view.setOnClickListener {
             val fragment = AttractionDetailsFragment()
             val bundle = Bundle().apply {
@@ -38,7 +37,6 @@ class AttractionsAdapter(private val attractions: List<Attraction>) :
             }
             fragment.arguments = bundle
 
-            // Получаем ссылку на фрагментный менеджер и открываем новый фрагмент
             (holder.view.context as? MainActivity)?.supportFragmentManager?.beginTransaction()
                 ?.replace(R.id.fragment_container, fragment)
                 ?.addToBackStack(null)

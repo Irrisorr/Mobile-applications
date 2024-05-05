@@ -7,6 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 
 class AttractionDetailsFragment : Fragment() {
 
@@ -21,19 +23,20 @@ class AttractionDetailsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Получаем переданные данные о достопримечательности
         val attraction = arguments?.getParcelable<Attraction>("attraction")
 
         if (attraction != null) {
-            // Находим элементы в разметке
             val titleTextView: TextView = view.findViewById(R.id.title_text_view)
             val descriptionTextView: TextView = view.findViewById(R.id.description_text_view)
             val imageView: ImageView = view.findViewById(R.id.image_view)
+            val stagesRecyclerView: RecyclerView = view.findViewById(R.id.stages_recycler_view)
 
-            // Устанавливаем данные о достопримечательности
             titleTextView.text = attraction.name
             descriptionTextView.text = attraction.description
             imageView.setImageResource(attraction.imageResId)
+
+            stagesRecyclerView.layoutManager = LinearLayoutManager(requireContext())
+            stagesRecyclerView.adapter = StagesAdapter(attraction.stages)
         }
     }
 }
