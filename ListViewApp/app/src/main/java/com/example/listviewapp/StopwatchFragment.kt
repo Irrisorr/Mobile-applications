@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 
 class StopwatchFragment : Fragment() {
 
@@ -17,16 +18,14 @@ class StopwatchFragment : Fragment() {
     private lateinit var stopButton: Button
     private lateinit var resetButton: Button
 
-    private var isRunning = false
-    private var elapsedTime: Long = 0
-    private var startTime: Long = 0
+    private lateinit var viewModel: StopwatchViewModel
 
     private val handler = Handler()
     private val updateTimeTask = object : Runnable {
         override fun run() {
             val currentTime = SystemClock.elapsedRealtime()
-            elapsedTime = currentTime - startTime
-            updateTimerText(elapsedTime)
+            viewModel.elapsedTime = currentTime - viewModel.startTime
+            updateTimerText(viewModel.elapsedTime)
             handler.postDelayed(this, 1000)
         }
     }
@@ -43,32 +42,47 @@ class StopwatchFragment : Fragment() {
         stopButton = view.findViewById(R.id.stop_button)
         resetButton = view.findViewById(R.id.reset_button)
 
+        viewModel = ViewModelProvider(this).get(StopwatchViewModel::class.java)
+
         startButton.setOnClickListener { startStopwatch() }
         stopButton.setOnClickListener { stopStopwatch() }
         resetButton.setOnClickListener { resetStopwatch() }
 
+        if (savedInstanceState != null) {
+            viewModel.isRunning = savedInstanceState.getBoolean("isRunning")
+            viewModel.elapsedTime = savedInstanceState.getLong("elapsedTime")
+            if (viewModel.isRunning) startStopwatch()
+            else updateTimerText(viewModel.elapsedTime)
+        }
+
         return view
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean("isRunning", viewModel.isRunning)
+        outState.putLong("elapsedTime", viewModel.elapsedTime)
+    }
+
     private fun startStopwatch() {
-        if (!isRunning) {
-            startTime = SystemClock.elapsedRealtime() - elapsedTime
+        if (!viewModel.isRunning) {
+            viewModel.startTime = SystemClock.elapsedRealtime() - viewModel.elapsedTime
             handler.post(updateTimeTask)
-            isRunning = true
+            viewModel.isRunning = true
         }
     }
 
     private fun stopStopwatch() {
-        if (isRunning) {
+        if (viewModel.isRunning) {
             handler.removeCallbacks(updateTimeTask)
-            isRunning = false
+            viewModel.isRunning = false
         }
     }
 
     private fun resetStopwatch() {
-        if (!isRunning) {
-            elapsedTime = 0
-            updateTimerText(elapsedTime)
+        if (!viewModel.isRunning) {
+            viewModel.elapsedTime = 0
+            updateTimerText(viewModel.elapsedTime)
         }
     }
 
