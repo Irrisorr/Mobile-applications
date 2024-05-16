@@ -1,3 +1,4 @@
+// AttractionsAdapter.kt
 package com.example.listviewapp
 
 import android.os.Bundle
@@ -28,16 +29,23 @@ class AttractionsAdapter(private val attractions: List<Attraction>) :
         holder.imageView.setImageResource(attraction.imageResId)
 
         holder.view.setOnClickListener {
-            val fragment = AttractionDetailsFragment()
-            val bundle = Bundle().apply {
-                putParcelable("attraction", attraction)
+            val context = holder.view.context
+            val fragment = AttractionDetailsFragment().apply {
+                arguments = Bundle().apply {
+                    putParcelable("attraction", attraction)
+                }
             }
-            fragment.arguments = bundle
 
-            (holder.view.context as? MainActivity)?.supportFragmentManager?.beginTransaction()
-                ?.replace(R.id.fragment_container, fragment)
-                ?.addToBackStack(null)
-                ?.commit()
+            if (context is MainActivity && context.findViewById<View>(R.id.details_fragment_container) != null) {
+                context.supportFragmentManager.beginTransaction()
+                    .replace(R.id.details_fragment_container, fragment)
+                    .commit()
+            } else {
+                (context as? MainActivity)?.supportFragmentManager?.beginTransaction()
+                    ?.replace(R.id.fragment_container, fragment)
+                    ?.addToBackStack(null)
+                    ?.commit()
+            }
         }
     }
 
