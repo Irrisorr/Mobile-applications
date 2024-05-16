@@ -31,9 +31,7 @@ class StopwatchFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_stopwatch, container, false)
 
@@ -48,20 +46,26 @@ class StopwatchFragment : Fragment() {
         stopButton.setOnClickListener { stopStopwatch() }
         resetButton.setOnClickListener { resetStopwatch() }
 
-        if (savedInstanceState != null) {
-            viewModel.isRunning = savedInstanceState.getBoolean("isRunning")
-            viewModel.elapsedTime = savedInstanceState.getLong("elapsedTime")
-            if (viewModel.isRunning) startStopwatch()
-            else updateTimerText(viewModel.elapsedTime)
+        if (viewModel.isRunning) {
+            handler.post(updateTimeTask)
         }
+        updateTimerText(viewModel.elapsedTime)
 
         return view
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putBoolean("isRunning", viewModel.isRunning)
-        outState.putLong("elapsedTime", viewModel.elapsedTime)
+    override fun onPause() {
+        super.onPause()
+        if (viewModel.isRunning) {
+            handler.removeCallbacks(updateTimeTask)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (viewModel.isRunning) {
+            handler.post(updateTimeTask)
+        }
     }
 
     private fun startStopwatch() {
