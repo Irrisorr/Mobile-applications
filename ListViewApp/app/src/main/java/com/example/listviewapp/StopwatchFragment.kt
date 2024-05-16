@@ -7,6 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -17,6 +19,9 @@ class StopwatchFragment : Fragment() {
     private lateinit var startButton: Button
     private lateinit var stopButton: Button
     private lateinit var resetButton: Button
+    private lateinit var saveButton: Button
+    private lateinit var scrollView: ScrollView
+    private lateinit var savedTimesLayout: LinearLayout
 
     private lateinit var viewModel: StopwatchViewModel
 
@@ -39,12 +44,16 @@ class StopwatchFragment : Fragment() {
         startButton = view.findViewById(R.id.start_button)
         stopButton = view.findViewById(R.id.stop_button)
         resetButton = view.findViewById(R.id.reset_button)
+        saveButton = view.findViewById(R.id.save_button)
+        scrollView = view.findViewById(R.id.saved_times_scroll_view)
+        savedTimesLayout = view.findViewById(R.id.saved_times_layout)
 
         viewModel = ViewModelProvider(this).get(StopwatchViewModel::class.java)
 
         startButton.setOnClickListener { startStopwatch() }
         stopButton.setOnClickListener { stopStopwatch() }
         resetButton.setOnClickListener { resetStopwatch() }
+        saveButton.setOnClickListener { saveTime() }
 
         if (viewModel.isRunning) {
             handler.post(updateTimeTask)
@@ -90,10 +99,30 @@ class StopwatchFragment : Fragment() {
         }
     }
 
+    private fun saveTime() {
+        viewModel.savedTimes.add(0, viewModel.elapsedTime)
+        updateSavedTimeText()
+    }
+
     private fun updateTimerText(elapsedTime: Long) {
         val seconds = (elapsedTime / 1000) % 60
         val minutes = (elapsedTime / (1000 * 60)) % 60
         val hours = elapsedTime / (1000 * 60 * 60)
         stopwatchTextView.text = String.format("%02d:%02d:%02d", hours, minutes, seconds)
+    }
+
+    private fun updateSavedTimeText() {
+        savedTimesLayout.removeAllViews()
+        viewModel.savedTimes.forEachIndexed { index, time ->
+            val seconds = (time / 1000) % 60
+            val minutes = (time / (1000 * 60)) % 60
+            val hours = time / (1000 * 60 * 60)
+            val savedTimeTextView = TextView(requireContext()).apply {
+                text = "Saved time ${viewModel.savedTimes.size - index}: ${String.format("%02d:%02d:%02d", hours, minutes, seconds)}"
+                textSize = 18f
+            }
+            savedTimesLayout.addView(savedTimeTextView)
+        }
+        scrollView.post { scrollView.fullScroll(View.FOCUS_DOWN) }
     }
 }

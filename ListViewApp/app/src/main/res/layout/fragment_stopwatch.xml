@@ -38,4 +38,29 @@
 
     </LinearLayout>
 
+    <Button
+        android:id="@+id/save_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Save Time"
+        android:onClick="saveTime" />
+
+    <ScrollView
+        android:id="@+id/saved_times_scroll_view"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingTop="8dp">
+
+        <LinearLayout
+            android:id="@+id/saved_times_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+        </LinearLayout>
+
+    </ScrollView>
+
+
+
 </LinearLayout>
