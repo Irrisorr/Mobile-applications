@@ -5,7 +5,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
 class AttractionsFragment : Fragment() {
@@ -13,8 +13,7 @@ class AttractionsFragment : Fragment() {
     private lateinit var attractionsAdapter: AttractionsAdapter
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
+        inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.fragment_attractions, container, false)
@@ -88,10 +87,10 @@ class AttractionsFragment : Fragment() {
             )
         )
 
-    val recyclerView: RecyclerView = view.findViewById(R.id.attractions_list)
+        val recyclerView: RecyclerView = view.findViewById(R.id.attractions_list)
         attractionsAdapter = AttractionsAdapter(attractions)
         recyclerView.adapter = attractionsAdapter
 
-        recyclerView.layoutManager = LinearLayoutManager(view.context)
+        recyclerView.layoutManager = GridLayoutManager(view.context, 2)
     }
 }
