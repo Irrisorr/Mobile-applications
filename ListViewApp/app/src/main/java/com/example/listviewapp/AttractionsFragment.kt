@@ -10,6 +10,18 @@ import androidx.recyclerview.widget.RecyclerView
 
 class AttractionsFragment : Fragment() {
 
+    companion object {
+        private const val ARG_TYPE = "type"
+
+        fun newInstance(type: String): AttractionsFragment {
+            val fragment = AttractionsFragment()
+            val args = Bundle()
+            args.putString(ARG_TYPE, type)
+            fragment.arguments = args
+            return fragment
+        }
+    }
+
     private lateinit var attractionsAdapter: AttractionsAdapter
 
     override fun onCreateView(
@@ -22,7 +34,17 @@ class AttractionsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val attractions = listOf(
+        val type = arguments?.getString(ARG_TYPE) ?: "easy"
+        val attractions = if (type == "easy") getEasyAttractions() else getHardAttractions()
+
+        val recyclerView: RecyclerView = view.findViewById(R.id.attractions_list)
+        attractionsAdapter = AttractionsAdapter(attractions)
+        recyclerView.adapter = attractionsAdapter
+        recyclerView.layoutManager = GridLayoutManager(view.context, 2)
+    }
+
+    private fun getEasyAttractions(): List<Attraction> {
+        return listOf(
             Attraction(
                 "Szlak Orlich Gniazd",
                 "Znany szlak turystyczny w południowej Polsce, prowadzący wzdłuż zamków i ruin",
@@ -63,7 +85,12 @@ class AttractionsFragment : Fragment() {
                     "Tarnica – Wetlina 12 km.",
                     "Wetlina – Ustrzyki Dolne 13 km."
                 )
-            ),
+            )
+        )
+    }
+
+    private fun getHardAttractions(): List<Attraction> {
+        return listOf(
             Attraction(
                 "Szlak Kaszubski",
                 "Szlak turystyczny w regionie Kaszub, przez lasy i jeziorа",
@@ -86,11 +113,5 @@ class AttractionsFragment : Fragment() {
                 )
             )
         )
-
-        val recyclerView: RecyclerView = view.findViewById(R.id.attractions_list)
-        attractionsAdapter = AttractionsAdapter(attractions)
-        recyclerView.adapter = attractionsAdapter
-
-        recyclerView.layoutManager = GridLayoutManager(view.context, 2)
     }
 }
