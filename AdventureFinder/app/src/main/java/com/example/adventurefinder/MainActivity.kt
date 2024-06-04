@@ -75,12 +75,17 @@ import com.google.android.gms.location.LocationSettingsStatusCodes
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 
 
 val Context.dataStore by preferencesDataStore("user_data")
 val userImageKey = intPreferencesKey("user_image")
 private const val REQUEST_CHECK_SETTINGS = 123
+val activeColorLight = Color.Blue
+val inactiveColorLight = Color.Gray
+val activeColorDark = Color.Cyan
+val inactiveColorDark = Color.LightGray
 
 
 
@@ -194,6 +199,8 @@ fun AdventureFinderApp() {
     var isDarkTheme by remember { mutableStateOf(false) }
     var wishlist by remember { mutableStateOf<List<AdventureActivity>>(emptyList()) }
     val dbHelper = UserDatabaseHelper(LocalContext.current)
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
 
     LaunchedEffect(loggedInUsername) {
@@ -210,7 +217,7 @@ fun AdventureFinderApp() {
 
     MaterialTheme(colorScheme = appTheme) {
         val activities = remember { getActivitiesList() }
-        val currentRoute = rememberNavController().currentBackStackEntry?.destination?.route ?: "login" // Получаем текущий маршрут
+        val currentRoute = navController.currentBackStackEntry?.destination?.route ?: "login" // Используем тот же navController
 
         Scaffold(
             bottomBar = {
@@ -220,7 +227,8 @@ fun AdventureFinderApp() {
                         onClick = { screen ->
                             navController.navigate(screen)
                         },
-                        currentRoute = currentRoute // Передаем текущий маршрут
+                        currentRoute = currentRoute ?: "profile",
+                        isDarkTheme = isDarkTheme
                     )
                 }
             }
@@ -604,14 +612,17 @@ fun getLatLngFromAddress(context: Context, strAddress: String): LatLng? {
 fun BottomNavigationBar(
     modifier: Modifier = Modifier,
     onClick: (String) -> Unit,
-    currentRoute: String // Добавляем текущий маршрут
+    currentRoute: String,
+    isDarkTheme: Boolean
 ) {
     val selectedItemSize = 28.dp
     val unselectedItemSize = 20.dp
 
+    val activeColor = if (isDarkTheme) activeColorDark else activeColorLight
+    val inactiveColor = if (isDarkTheme) inactiveColorDark else inactiveColorLight
+
     NavigationBar(
         modifier = modifier,
-        containerColor = Color.White,
         tonalElevation = 2.dp
     ) {
         NavigationBarItem(
@@ -619,42 +630,58 @@ fun BottomNavigationBar(
                 Icon(
                     imageVector = Icons.Default.AccountCircle,
                     contentDescription = "Profile",
+                    tint = if (currentRoute == "profile") activeColor else inactiveColor,
                     modifier = Modifier.size(if (currentRoute == "profile") selectedItemSize else unselectedItemSize)
                 )
             },
-            label = { Text("Profile", style = MaterialTheme.typography.labelSmall) },
-            selected = currentRoute == "profile", // Сравниваем с текущим маршрутом
+            label = {
+                Text(
+                    "Profile",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (currentRoute == "profile") activeColor else inactiveColor
+                )
+            },
+            selected = currentRoute == "profile",
             onClick = { onClick("profile") },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color.Blue,
-                selectedTextColor = Color.Blue,
+                selectedIconColor = activeColor,
+                selectedTextColor = activeColor,
                 indicatorColor = Color.Transparent
             )
         )
+
         NavigationBarItem(
             icon = {
                 Icon(
                     imageVector = Icons.Default.LocationOn,
                     contentDescription = "Map",
+                    tint = if (currentRoute == "map") activeColor else inactiveColor,
                     modifier = Modifier.size(if (currentRoute == "map") selectedItemSize else unselectedItemSize)
                 )
             },
-            label = { Text("Map", style = MaterialTheme.typography.labelSmall) },
+            label = {
+                Text(
+                    "Map",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (currentRoute == "map") activeColor else inactiveColor
+                )
+            },
             selected = currentRoute == "map",
             onClick = { onClick("map") },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color.Blue,
-                selectedTextColor = Color.Blue,
+                selectedIconColor = activeColor,
+                selectedTextColor = activeColor,
                 indicatorColor = Color.Transparent
             )
         )
         NavigationBarItem(
             icon = { Icon(imageVector = Icons.Default.List,
                 contentDescription = "Activities",
+                tint = if (currentRoute == "activities") activeColor else inactiveColor,
                 modifier = Modifier.size(if (currentRoute == "activities") selectedItemSize else unselectedItemSize)
             ) },
-            label = { Text("Activities", style = MaterialTheme.typography.labelSmall) },
-            selected = currentRoute == "activities",
+            label = { Text("Activities", style = MaterialTheme.typography.labelSmall, color = if (currentRoute == "activities") activeColor else inactiveColor) },
+            selected = remember(currentRoute) { currentRoute == "activities" },
             onClick = { onClick("activities") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color.Blue,
@@ -665,10 +692,11 @@ fun BottomNavigationBar(
         NavigationBarItem(
             icon = { Icon(imageVector = Icons.Default.Star,
                 contentDescription = "My Wishlist",
+                tint = if (currentRoute == "wishlist") activeColor else inactiveColor,
                 modifier = Modifier.size(if (currentRoute == "wishlist") selectedItemSize else unselectedItemSize)
             ) },
-            label = { Text("My Wishlist", style = MaterialTheme.typography.labelSmall) },
-            selected = currentRoute == "wishlist",
+            label = { Text("My Wishlist", style = MaterialTheme.typography.labelSmall, color = if (currentRoute == "wishlist") activeColor else inactiveColor) },
+            selected = remember(currentRoute) { currentRoute == "wishlist" },
             onClick = { onClick("wishlist") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color.Blue,
@@ -679,10 +707,11 @@ fun BottomNavigationBar(
         NavigationBarItem(
             icon = { Icon(imageVector = Icons.Default.Settings,
                 contentDescription = "Settings",
+                tint = if (currentRoute == "settings") activeColor else inactiveColor,
                 modifier = Modifier.size(if (currentRoute == "settings") selectedItemSize else unselectedItemSize)
             ) },
-            label = { Text("Settings", style = MaterialTheme.typography.labelSmall) },
-            selected = currentRoute == "settings",
+            label = { Text("Settings", style = MaterialTheme.typography.labelSmall, color = if (currentRoute == "settings") activeColor else inactiveColor) },
+            selected = remember(currentRoute) { currentRoute == "settings" },
             onClick = { onClick("settings") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color.Blue,
@@ -780,6 +809,13 @@ fun ActivitiesScreen(
                 onDismissRequest = { expanded = false },
                 modifier = Modifier.fillMaxWidth()
             ) {
+                DropdownMenuItem(
+                    text = { Text("All Categories") }, // Пункт "Все категории"
+                    onClick = {
+                        selectedCategory = null // Сбрасываем фильтр
+                        expanded = false
+                    }
+                )
                 activities.map { it.category }.distinct().forEach { category ->
                     DropdownMenuItem(
                         text = { Text(category) },
