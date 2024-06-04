@@ -62,6 +62,7 @@ dependencies {
 
     implementation("androidx.sqlite:sqlite:2.3.1")
     implementation("androidx.navigation:navigation-compose:2.5.3")
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
