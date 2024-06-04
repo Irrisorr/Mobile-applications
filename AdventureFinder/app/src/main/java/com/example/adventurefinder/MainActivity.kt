@@ -70,6 +70,7 @@ import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.LocationSettingsStatusCodes
 import androidx.compose.foundation.lazy.items
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 
 
 val Context.dataStore by preferencesDataStore("user_data")
@@ -514,7 +515,8 @@ fun MapScreen() {
             Marker(
                 state = MarkerState(position = location),
                 title = "Your Location",
-                snippet = "This is your current location"
+                snippet = "This is your current location",
+                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE) // Синяя метка
             )
         }
     }
@@ -593,20 +595,33 @@ data class AdventureActivity(
 fun ActivitiesScreen() {
     val activities = listOf(
         AdventureActivity(
-            name = "Hiking",
-            category = "Outdoor",
-            description = "Enjoy a scenic hike in the mountains.",
-            address = "123 Mountain Trail",
-            imageRes = R.drawable.my_feel_good
+            name = "Karting",
+            category = "Race",
+            description = "Witaj na jednym z najnowocześniejszych torów kartingowych w Polsce!",
+            address = "ul. Cisowa 6, 60-185 Skórzewo",
+            imageRes = R.drawable.karting
         ),
         AdventureActivity(
-            name = "Hiking 2",
-            category = "Test",
-            description = "Enjoy a scenic hike in the mountains.",
-            address = "123 Mountain Trail",
-            imageRes = R.drawable.my_lonely_kitten
+            name = "Bungee",
+            category = "Adrenaline",
+            description = "Ekstremalna atrakcja nad Maltą!",
+            address = "Wileńska, 61-024 Poznań",
+            imageRes = R.drawable.bungee
+        ),
+        AdventureActivity(
+            name = "Wakepark",
+            category = "Paddle",
+            description = "Pierwszy Wake Park w centrum Poznania",
+            address = "Jezioro Maltańskie, Poznań, Jana Pawła II, 61-130 Poznań",
+            imageRes = R.drawable.wakepark
+        ),
+        AdventureActivity(
+            name = "IceRing",
+            category = "Paddle",
+            description = "Nowoczesny i funkcjonalny obiekt znajdujący się w centrum miasta, wyposażony w pełnowymiarowe boisko do gry w hokeja na lodzie",
+            address = "ul. Jana Spychalskiego 34, 61-553 Poznań",
+            imageRes = R.drawable.icering
         )
-        // Добавьте остальные активности здесь
     )
 
     LazyColumn(
