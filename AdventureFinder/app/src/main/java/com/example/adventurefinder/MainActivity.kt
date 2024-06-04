@@ -33,6 +33,18 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.ui.graphics.Color
 
 
 val Context.dataStore by preferencesDataStore("user_data")
@@ -51,14 +63,58 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AdventureFinderApp() {
     val navController = rememberNavController()
-    var loggedInUsername by remember { mutableStateOf("") } // Хранение имени пользователя
+    var loggedInUsername by remember { mutableStateOf("") }
+    var isLoggedIn by remember { mutableStateOf(false) }
 
-    NavHost(navController = navController, startDestination = "login") {
-        composable("login") { LoginScreen(navController, loggedInUsername) { username ->
-            loggedInUsername = username  // Сохраняем имя при успешном входе
-        } }
-        composable("registration") { RegistrationScreen(navController) }
-        composable("main") { ProfileScreen(username = loggedInUsername) } // Передаем имя
+    Scaffold(
+        bottomBar = {
+            if (isLoggedIn) {
+                BottomNavigationBar(
+                    modifier = Modifier.background(Color.White, shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                    onClick = { screen ->
+                        navController.navigate(screen)
+                    }
+                )
+            }
+        }
+    ) { innerPadding ->
+        NavHost(navController = navController, startDestination = "login") {
+            composable("login") {
+                LoginScreen(navController, loggedInUsername) { username ->
+                    loggedInUsername = username
+                    isLoggedIn = true
+                    navController.navigate("profile")
+                }
+            }
+            composable("registration") { RegistrationScreen(navController) }
+            composable("profile") { ProfileScreen(username = loggedInUsername) }
+            composable("map") { Text("Map Screen") }
+            composable("wishlist") { Text("My Wishlist Screen") }
+            composable("settings") { SettingsScreen(onLogout = { isLoggedIn = false; navController.navigate("login") }) }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(onLogout: () -> Unit) {
+    Scaffold(
+        topBar = { CenterAlignedTopAppBar(title = { Text("Settings") }) }
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Button(
+                onClick = onLogout,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Logout")
+            }
+        }
     }
 }
 
@@ -108,8 +164,6 @@ fun LoginScreen(
                     val user = dbHelper.getUser(username)
                     if (user != null && user.password == password) {
                         onLoginSuccess(username) // Вызываем колбэк при успехе
-                        navController.navigate("main")
-
                     } else {
                         Toast.makeText(context, "Invalid username or password", Toast.LENGTH_SHORT).show()
                     }
@@ -229,14 +283,13 @@ fun ProfileScreen(username: String) {
 
             Image(
                 bitmap = BitmapFactory.decodeResource(LocalContext.current.resources, selectedImage).asImageBitmap(),
-                contentDescription = "Avatar",
+                contentDescription = null,
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(120.dp)
                     .clickable {
-                        showDialog = true  // Показываем диалог при клике
+                        showDialog = true // Показываем диалог при клике на изображение
                     }
             )
-
             Spacer(modifier = Modifier.height(16.dp))
 
             if (isEditing) {
@@ -246,64 +299,111 @@ fun ProfileScreen(username: String) {
                     label = { Text("About me") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = {
+                        isEditing = false
+                        scope.launch {
+                            context.dataStore.edit { preferences ->
+                                preferences[userDescriptionKey] = userDescription
+                                preferences[userImageKey] = selectedImage
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Save")
+                }
             } else {
-                Text(userDescription)
+                Text(userDescription, style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { isEditing = true },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Edit")
+                }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Button(onClick = {
-                if (isEditing) {
-                    scope.launch {
-                        context.dataStore.edit { preferences ->
-                            preferences[userDescriptionKey] = userDescription
+            // Диалог для выбора изображения
+            if (showDialog) {
+                AlertDialog(
+                    onDismissRequest = { showDialog = false },
+                    title = { Text("Select an image") },
+                    text = {
+                        Column {
+                            imageOptions.forEach { imageRes ->
+                                Image(
+                                    painter = painterResource(id = imageRes),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .size(60.dp)
+                                        .clickable {
+                                            selectedImage = imageRes
+                                            showDialog = false
+                                        }
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+                    },
+                    confirmButton = {},
+                    dismissButton = {
+                        TextButton(onClick = { showDialog = false }) {
+                            Text("Cancel")
                         }
                     }
-                    Toast.makeText(context, "Description saved!", Toast.LENGTH_SHORT).show()
-                }
-                isEditing = !isEditing
-            }) {
-                Text(if (isEditing) "Save Changes" else "Change Information")
+                )
             }
         }
     }
+}
 
-    // Диалог выбора аватара
-    if (showDialog) {
-        var selectedIndex by remember { mutableStateOf(0) }
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Choose your avatar") },
-            text = {
-                Column {
-                    imageOptions.forEachIndexed { index, image ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Image(
-                                painter = painterResource(id = image),
-                                contentDescription = "Avatar option",
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .clickable { selectedIndex = index }
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Avatar ${index + 1}")
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    selectedImage = imageOptions[selectedIndex]
-                    scope.launch {
-                        context.dataStore.edit { preferences ->
-                            preferences[userImageKey] = selectedImage
-                        }
-                    }
-                    showDialog = false
-                }) {
-                    Text("OK")
-                }
-            }
+@Composable
+fun BottomNavigationBar(
+    modifier: Modifier = Modifier,
+    onClick: (String) -> Unit
+) {
+    NavigationBar(modifier = modifier) {
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.AccountCircle, contentDescription = "Profile") },
+            label = { Text("Profile") },
+            selected = false,
+            onClick = { onClick("profile") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color.Blue,
+                selectedTextColor = Color.Blue
+            )
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.LocationOn, contentDescription = "Map") },
+            label = { Text("Map") },
+            selected = false,
+            onClick = { onClick("map") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color.Blue,
+                selectedTextColor = Color.Blue
+            )
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.Star, contentDescription = "My Wishlist") },
+            label = { Text("My Wishlist") },
+            selected = false,
+            onClick = { onClick("wishlist") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color.Blue,
+                selectedTextColor = Color.Blue
+            )
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+            label = { Text("Settings") },
+            selected = false,
+            onClick = { onClick("settings") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color.Blue,
+                selectedTextColor = Color.Blue
+            )
         )
     }
 }
