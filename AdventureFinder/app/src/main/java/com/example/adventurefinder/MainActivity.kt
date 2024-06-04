@@ -193,6 +193,14 @@ fun AdventureFinderApp() {
     var isLoggedIn by remember { mutableStateOf(false) }
     var isDarkTheme by remember { mutableStateOf(false) }
     var wishlist by remember { mutableStateOf<List<AdventureActivity>>(emptyList()) }
+    val dbHelper = UserDatabaseHelper(LocalContext.current)
+
+
+    LaunchedEffect(loggedInUsername) {
+        if (loggedInUsername.isNotEmpty()) {
+            wishlist = dbHelper.getUserWishlist(loggedInUsername)
+        }
+    }
 
     val appTheme = if (isDarkTheme) {
         darkColorScheme()
@@ -226,9 +234,6 @@ fun AdventureFinderApp() {
                 composable("registration") { RegistrationScreen(navController) }
                 composable("profile") { ProfileScreen(username = loggedInUsername) }
                 composable("map") { MapScreen(activities = activities) }
-                composable("wishlist") {
-                    WishlistScreen(wishlist = wishlist)
-                }
                 composable("settings") {
                     SettingsScreen(
                         onLogout = {
@@ -241,12 +246,24 @@ fun AdventureFinderApp() {
                 composable("activities") {
                     ActivitiesScreen(
                         activities = activities,
+                        wishlist = wishlist,
                         onLikeClick = { activity ->
-                            wishlist = if (wishlist.contains(activity)) {
-                                wishlist.filter { it != activity }
+                            if (wishlist.contains(activity)) {
+                                dbHelper.removeFromWishlist(loggedInUsername, activity.name)
                             } else {
-                                wishlist + activity
+                                dbHelper.addToWishlist(loggedInUsername, activity.name)
                             }
+                            wishlist = dbHelper.getUserWishlist(loggedInUsername)
+                        }
+                    )
+                }
+
+                composable("wishlist") {
+                    WishlistScreen(
+                        wishlist = wishlist,
+                        onLikeClick = { activity ->
+                            dbHelper.removeFromWishlist(loggedInUsername, activity.name)
+                            wishlist = dbHelper.getUserWishlist(loggedInUsername)
                         }
                     )
                 }
@@ -327,6 +344,10 @@ fun ProfileScreen(username: String) {
 
     // Загрузка описания из DataStore
     LaunchedEffect(username) {
+        val dbHelper = UserDatabaseHelper(context)
+        val user = dbHelper.getUser(username)
+        val registrationDate = user?.registrationDate ?: "Unknown"
+
         context.dataStore.data.collect { preferences ->
             userDescription = preferences[userDescriptionKey] ?: "About me: "
             selectedImage = preferences[userImageKey] ?: R.drawable.my_lonely_kitten
@@ -666,6 +687,13 @@ fun getActivitiesList(): List<AdventureActivity> {
             description = "Nowoczesny i funkcjonalny obiekt znajdujący się w centrum miasta, wyposażony w pełnowymiarowe boisko do gry w hokeja na lodzie",
             address = "ul. Jana Spychalskiego 34, 61-553 Poznań",
             imageRes = R.drawable.icering
+        ),
+        AdventureActivity(
+            name = "IceRing test 2",
+            category = "Paddle",
+            description = "Nowoczesny i funkcjonalny obiekt znajdujący się w centrum miasta, wyposażony w pełnowymiarowe boisko do gry w hokeja na lodzie",
+            address = "ul. Jana Spychalskiego 34, 61-553 Poznań",
+            imageRes = R.drawable.icering
         )
     )
 }
@@ -681,21 +709,22 @@ data class AdventureActivity(
 )
 
 @Composable
-fun ActivitiesScreen(activities: List<AdventureActivity>, onLikeClick: (AdventureActivity) -> Unit) {
+fun ActivitiesScreen(activities: List<AdventureActivity>, wishlist: List<AdventureActivity>, onLikeClick: (AdventureActivity) -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp)
     ) {
         items(activities) { activity ->
-            ActivityItem(activity, onLikeClick)
+            val isLiked = wishlist.any { it.name == activity.name }
+            ActivityItem(activity, isLiked, onLikeClick)
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-fun ActivityItem(activity: AdventureActivity, onLikeClick: (AdventureActivity) -> Unit) {
-    var isLiked by remember { mutableStateOf(false) }
+fun ActivityItem(activity: AdventureActivity, isLiked: Boolean, onLikeClick: (AdventureActivity) -> Unit) {
+    var liked by remember { mutableStateOf(isLiked) }
 
     Row(
         modifier = Modifier
@@ -717,27 +746,27 @@ fun ActivityItem(activity: AdventureActivity, onLikeClick: (AdventureActivity) -
         }
         IconButton(
             onClick = {
-                isLiked = !isLiked
+                liked = !liked
                 onLikeClick(activity)
             }
         ) {
             Icon(
-                imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = if (isLiked) "Unlike" else "Like",
-                tint = if (isLiked) Color.Red else Color.Gray
+                imageVector = if (liked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = if (liked) "Unlike" else "Like",
+                tint = if (liked) Color.Red else Color.Gray
             )
         }
     }
 }
 
 @Composable
-fun WishlistScreen(wishlist: List<AdventureActivity>) {
+fun WishlistScreen(wishlist: List<AdventureActivity>, onLikeClick: (AdventureActivity) -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp)
     ) {
         items(wishlist) { activity ->
-            ActivityItem(activity, onLikeClick = {})
+            ActivityItem(activity, isLiked = true, onLikeClick = onLikeClick)
             Spacer(modifier = Modifier.height(16.dp))
         }
     }

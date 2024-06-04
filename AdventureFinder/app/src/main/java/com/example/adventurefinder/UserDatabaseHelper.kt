@@ -18,16 +18,24 @@ class UserDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
     }
 
     override fun onCreate(db: SQLiteDatabase) {
-        val createTableQuery = "CREATE TABLE $TABLE_USERS (" +
+        val createUsersTableQuery = "CREATE TABLE $TABLE_USERS (" +
                 "$COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT," +
                 "$COLUMN_USERNAME TEXT UNIQUE NOT NULL," +
                 "$COLUMN_PASSWORD TEXT NOT NULL," +
-                "$COLUMN_REGISTRATION_DATE TEXT)" // Добавлено новое поле
-        db.execSQL(createTableQuery)
+                "$COLUMN_REGISTRATION_DATE TEXT)"
+        db.execSQL(createUsersTableQuery)
+
+        val createWishlistTableQuery = "CREATE TABLE wishlist (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                "username TEXT NOT NULL," +
+                "activity_name TEXT NOT NULL," +
+                "FOREIGN KEY (username) REFERENCES $TABLE_USERS ($COLUMN_USERNAME))"
+        db.execSQL(createWishlistTableQuery)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.execSQL("DROP TABLE IF EXISTS $TABLE_USERS")
+        db.execSQL("DROP TABLE IF EXISTS wishlist")
         onCreate(db)
     }
 
@@ -65,6 +73,36 @@ class UserDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
         cursor.close()
         db.close()
         return user
+    }
+
+    fun getUserWishlist(username: String): List<AdventureActivity> {
+        val db = readableDatabase
+        val query = "SELECT * FROM wishlist WHERE username = ?"
+        val cursor = db.rawQuery(query, arrayOf(username))
+        val wishlist = mutableListOf<AdventureActivity>()
+
+        while (cursor.moveToNext()) {
+            val activityName = cursor.getString(cursor.getColumnIndex("activity_name"))
+            val activity = getActivitiesList().find { it.name == activityName }
+            activity?.let { wishlist.add(it) }
+        }
+
+        cursor.close()
+        return wishlist
+    }
+
+    fun addToWishlist(username: String, activityName: String) {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("username", username)
+            put("activity_name", activityName)
+        }
+        db.insert("wishlist", null, values)
+    }
+
+    fun removeFromWishlist(username: String, activityName: String) {
+        val db = writableDatabase
+        db.delete("wishlist", "username = ? AND activity_name = ?", arrayOf(username, activityName))
     }
 }
 
