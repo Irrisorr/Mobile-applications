@@ -209,7 +209,8 @@ fun AdventureFinderApp() {
     }
 
     MaterialTheme(colorScheme = appTheme) {
-        val activities = remember { getActivitiesList() } // Список активностей
+        val activities = remember { getActivitiesList() }
+        val currentRoute = rememberNavController().currentBackStackEntry?.destination?.route ?: "login" // Получаем текущий маршрут
 
         Scaffold(
             bottomBar = {
@@ -218,7 +219,8 @@ fun AdventureFinderApp() {
                         modifier = Modifier.background(Color.White, shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
                         onClick = { screen ->
                             navController.navigate(screen)
-                        }
+                        },
+                        currentRoute = currentRoute // Передаем текущий маршрут
                     )
                 }
             }
@@ -601,57 +603,91 @@ fun getLatLngFromAddress(context: Context, strAddress: String): LatLng? {
 @Composable
 fun BottomNavigationBar(
     modifier: Modifier = Modifier,
-    onClick: (String) -> Unit
+    onClick: (String) -> Unit,
+    currentRoute: String // Добавляем текущий маршрут
 ) {
-    NavigationBar(modifier = modifier) {
+    val selectedItemSize = 28.dp
+    val unselectedItemSize = 20.dp
+
+    NavigationBar(
+        modifier = modifier,
+        containerColor = Color.White,
+        tonalElevation = 2.dp
+    ) {
         NavigationBarItem(
-            icon = { Icon(Icons.Default.AccountCircle, contentDescription = "Profile") },
-            label = { Text("Profile") },
-            selected = false,
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Profile",
+                    modifier = Modifier.size(if (currentRoute == "profile") selectedItemSize else unselectedItemSize)
+                )
+            },
+            label = { Text("Profile", style = MaterialTheme.typography.labelSmall) },
+            selected = currentRoute == "profile", // Сравниваем с текущим маршрутом
             onClick = { onClick("profile") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color.Blue,
-                selectedTextColor = Color.Blue
+                selectedTextColor = Color.Blue,
+                indicatorColor = Color.Transparent
             )
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.LocationOn, contentDescription = "Map") },
-            label = { Text("Map") },
-            selected = false,
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = "Map",
+                    modifier = Modifier.size(if (currentRoute == "map") selectedItemSize else unselectedItemSize)
+                )
+            },
+            label = { Text("Map", style = MaterialTheme.typography.labelSmall) },
+            selected = currentRoute == "map",
             onClick = { onClick("map") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color.Blue,
-                selectedTextColor = Color.Blue
+                selectedTextColor = Color.Blue,
+                indicatorColor = Color.Transparent
             )
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.List, contentDescription = "Activities") },
-            label = { Text("Activities") },
-            selected = false,
+            icon = { Icon(imageVector = Icons.Default.List,
+                contentDescription = "Activities",
+                modifier = Modifier.size(if (currentRoute == "activities") selectedItemSize else unselectedItemSize)
+            ) },
+            label = { Text("Activities", style = MaterialTheme.typography.labelSmall) },
+            selected = currentRoute == "activities",
             onClick = { onClick("activities") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color.Blue,
-                selectedTextColor = Color.Blue
+                selectedTextColor = Color.Blue,
+                indicatorColor = Color.Transparent
             )
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Star, contentDescription = "My Wishlist") },
-            label = { Text("My Wishlist") },
-            selected = false,
+            icon = { Icon(imageVector = Icons.Default.Star,
+                contentDescription = "My Wishlist",
+                modifier = Modifier.size(if (currentRoute == "wishlist") selectedItemSize else unselectedItemSize)
+            ) },
+            label = { Text("My Wishlist", style = MaterialTheme.typography.labelSmall) },
+            selected = currentRoute == "wishlist",
             onClick = { onClick("wishlist") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color.Blue,
-                selectedTextColor = Color.Blue
+                selectedTextColor = Color.Blue,
+                indicatorColor = Color.Transparent
             )
         )
         NavigationBarItem(
-            icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-            label = { Text("Settings") },
-            selected = false,
+            icon = { Icon(imageVector = Icons.Default.Settings,
+                contentDescription = "Settings",
+                modifier = Modifier.size(if (currentRoute == "settings") selectedItemSize else unselectedItemSize)
+            ) },
+            label = { Text("Settings", style = MaterialTheme.typography.labelSmall) },
+            selected = currentRoute == "settings",
             onClick = { onClick("settings") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color.Blue,
-                selectedTextColor = Color.Blue
+                selectedTextColor = Color.Blue,
+                indicatorColor = Color.Transparent
             )
         )
     }
@@ -709,18 +745,66 @@ data class AdventureActivity(
 )
 
 @Composable
-fun ActivitiesScreen(activities: List<AdventureActivity>, wishlist: List<AdventureActivity>, onLikeClick: (AdventureActivity) -> Unit) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp)
-    ) {
-        items(activities) { activity ->
-            val isLiked = wishlist.any { it.name == activity.name }
-            ActivityItem(activity, isLiked, onLikeClick)
-            Spacer(modifier = Modifier.height(16.dp))
+fun ActivitiesScreen(
+    activities: List<AdventureActivity>,
+    wishlist: List<AdventureActivity>,
+    onLikeClick: (AdventureActivity) -> Unit
+) {
+    var selectedCategory by remember { mutableStateOf<String?>(null) }
+    var expanded by remember { mutableStateOf(false) } // Состояние для DropdownMenu
+
+    val filteredActivities = if (selectedCategory != null) {
+        activities.filter { it.category == selectedCategory }
+    } else {
+        activities
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // DropdownMenu для выбора категории
+        Box(modifier = Modifier.padding(8.dp)) {
+            Button(
+                onClick = { expanded = true },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (selectedCategory != null) Color.Blue else Color.LightGray
+                )
+            ) {
+                Text(
+                    text = selectedCategory ?: "Select Category",
+                    color = if (selectedCategory != null) Color.White else Color.Black
+                )
+            }
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                activities.map { it.category }.distinct().forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(category) },
+                        onClick = {
+                            selectedCategory = category
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp)
+        ) {
+            items(filteredActivities) { activity ->
+                val isLiked = wishlist.any { it.name == activity.name }
+                ActivityItem(activity, isLiked, onLikeClick)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
         }
     }
 }
+
 
 @Composable
 fun ActivityItem(activity: AdventureActivity, isLiked: Boolean, onLikeClick: (AdventureActivity) -> Unit) {
