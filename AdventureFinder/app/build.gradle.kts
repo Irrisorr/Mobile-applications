@@ -65,6 +65,10 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation("com.google.maps.android:maps-compose:2.3.0")
     implementation("com.google.android.gms:play-services-maps:18.1.0")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.4.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.28.0")
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

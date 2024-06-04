@@ -52,10 +52,30 @@ import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import android.Manifest
+import android.app.Activity
+import androidx.compose.runtime.DisposableEffect
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import android.content.IntentSender
+import android.location.LocationManager
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.filled.List
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.LocationSettingsRequest
+import com.google.android.gms.location.LocationSettingsStatusCodes
+import androidx.compose.foundation.lazy.items
 
 
 val Context.dataStore by preferencesDataStore("user_data")
 val userImageKey = intPreferencesKey("user_image")
+private const val REQUEST_CHECK_SETTINGS = 123
+
 
 
 class MainActivity : ComponentActivity() {
@@ -69,7 +89,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onLogout: () -> Unit) {
+fun SettingsScreen(onLogout: () -> Unit, onThemeChange: () -> Unit) {
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text("Settings") }) }
     ) { innerPadding ->
@@ -80,6 +100,13 @@ fun SettingsScreen(onLogout: () -> Unit) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Button(
+                onClick = onThemeChange,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Change Theme")
+            }
+            Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = onLogout,
                 modifier = Modifier.fillMaxWidth()
@@ -158,32 +185,50 @@ fun AdventureFinderApp() {
     val navController = rememberNavController()
     var loggedInUsername by remember { mutableStateOf("") }
     var isLoggedIn by remember { mutableStateOf(false) }
+    var isDarkTheme by remember { mutableStateOf(false) }
 
-    Scaffold(
-        bottomBar = {
-            if (isLoggedIn) {
-                BottomNavigationBar(
-                    modifier = Modifier.background(Color.White, shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                    onClick = { screen ->
-                        navController.navigate(screen)
-                    }
-                )
-            }
-        }
-    ) { innerPadding ->
-        NavHost(navController = navController, startDestination = "login") {
-            composable("login") {
-                LoginScreen(navController, loggedInUsername) { username ->
-                    loggedInUsername = username
-                    isLoggedIn = true
-                    navController.navigate("profile")
+    val appTheme = if (isDarkTheme) {
+        darkColorScheme()
+    } else {
+        lightColorScheme()
+    }
+
+    MaterialTheme(colorScheme = appTheme) {
+        Scaffold(
+            bottomBar = {
+                if (isLoggedIn) {
+                    BottomNavigationBar(
+                        modifier = Modifier.background(Color.White, shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                        onClick = { screen ->
+                            navController.navigate(screen)
+                        }
+                    )
                 }
             }
-            composable("registration") { RegistrationScreen(navController) }
-            composable("profile") { ProfileScreen(username = loggedInUsername) }
-            composable("map") { MapScreen() } // Замените Text("Map Screen") на MapScreen()
-            composable("wishlist") { Text("My Wishlist Screen") }
-            composable("settings") { SettingsScreen(onLogout = { isLoggedIn = false; navController.navigate("login") }) }
+        ) { innerPadding ->
+            NavHost(navController = navController, startDestination = "login") {
+                composable("login") {
+                    LoginScreen(navController, loggedInUsername) { username ->
+                        loggedInUsername = username
+                        isLoggedIn = true
+                        navController.navigate("profile")
+                    }
+                }
+                composable("registration") { RegistrationScreen(navController) }
+                composable("profile") { ProfileScreen(username = loggedInUsername) }
+                composable("map") { MapScreen() }
+                composable("wishlist") { Text("My Wishlist Screen") }
+                composable("settings") {
+                    SettingsScreen(
+                        onLogout = {
+                            isLoggedIn = false
+                            navController.navigate("login")
+                        },
+                        onThemeChange = { isDarkTheme = !isDarkTheme }
+                    )
+                }
+                composable("activities") { ActivitiesScreen() }
+            }
         }
     }
 }
@@ -388,10 +433,75 @@ fun ProfileScreen(username: String) {
     }
 }
 
+
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun MapScreen() {
+    val permissionsState = rememberMultiplePermissionsState(
+        listOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+    )
+
+    val locationClient = LocationServices.getFusedLocationProviderClient(LocalContext.current)
+    var currentLocation by remember { mutableStateOf<LatLng?>(null) }
+    val defaultLocation = LatLng(52.2319, 21.0067) // Варшава
+
+    val locationRequest = LocationRequest.create().apply {
+        priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+    }
+
+    val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult) {
+            locationResult.lastLocation?.let {
+                currentLocation = LatLng(it.latitude, it.longitude)
+            }
+        }
+    }
+
+    val context = LocalContext.current
+    val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    val isLocationEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+            locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+
+    if (!isLocationEnabled) {
+        val locationRequest = LocationRequest.create().apply {
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+
+        val builder = LocationSettingsRequest.Builder().addLocationRequest(locationRequest)
+        val settingsClient = LocationServices.getSettingsClient(context)
+        val locationSettingsResponseTask = settingsClient.checkLocationSettings(builder.build())
+
+        locationSettingsResponseTask.addOnFailureListener { exception ->
+            if (exception is ResolvableApiException) {
+                try {
+                    exception.startResolutionForResult(
+                        context as Activity,
+                        REQUEST_CHECK_SETTINGS
+                    )
+                } catch (sendEx: IntentSender.SendIntentException) {
+                    // Обработка ошибки
+                }
+            }
+        }
+
+    }
+
+    DisposableEffect(Unit) {
+        if (permissionsState.allPermissionsGranted) {
+            locationClient.requestLocationUpdates(locationRequest, locationCallback, null)
+        } else {
+            permissionsState.launchMultiplePermissionRequest()
+        }
+        onDispose {
+            locationClient.removeLocationUpdates(locationCallback)
+        }
+    }
+
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(40.730610, -73.935242), 10f)
+        position = CameraPosition.fromLatLngZoom(currentLocation ?: defaultLocation, 6.5f)
     }
 
     GoogleMap(
@@ -400,11 +510,13 @@ fun MapScreen() {
         properties = MapProperties(mapType = MapType.NORMAL),
         uiSettings = MapUiSettings(zoomControlsEnabled = false)
     ) {
-        Marker(
-            state = MarkerState(position = LatLng(40.730610, -73.935242)),
-            title = "New York City",
-            snippet = "The Big Apple"
-        )
+        currentLocation?.let { location ->
+            Marker(
+                state = MarkerState(position = location),
+                title = "Your Location",
+                snippet = "This is your current location"
+            )
+        }
     }
 }
 
@@ -435,6 +547,16 @@ fun BottomNavigationBar(
             )
         )
         NavigationBarItem(
+            icon = { Icon(Icons.Default.List, contentDescription = "Activities") },
+            label = { Text("Activities") },
+            selected = false,
+            onClick = { onClick("activities") },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color.Blue,
+                selectedTextColor = Color.Blue
+            )
+        )
+        NavigationBarItem(
             icon = { Icon(Icons.Default.Star, contentDescription = "My Wishlist") },
             label = { Text("My Wishlist") },
             selected = false,
@@ -454,5 +576,66 @@ fun BottomNavigationBar(
                 selectedTextColor = Color.Blue
             )
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+// Переименуйте ваш класс Activity в AdventureActivity
+data class AdventureActivity(
+    val name: String,
+    val category: String,
+    val description: String,
+    val address: String,
+    val imageRes: Int
+)
+
+@Composable
+fun ActivitiesScreen() {
+    val activities = listOf(
+        AdventureActivity(
+            name = "Hiking",
+            category = "Outdoor",
+            description = "Enjoy a scenic hike in the mountains.",
+            address = "123 Mountain Trail",
+            imageRes = R.drawable.my_feel_good
+        ),
+        AdventureActivity(
+            name = "Hiking 2",
+            category = "Test",
+            description = "Enjoy a scenic hike in the mountains.",
+            address = "123 Mountain Trail",
+            imageRes = R.drawable.my_lonely_kitten
+        )
+        // Добавьте остальные активности здесь
+    )
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        items(activities) { activity ->
+            ActivityItem(activity)
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+fun ActivityItem(activity: AdventureActivity) {
+    Row(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Image(
+            painter = painterResource(id = activity.imageRes),
+            contentDescription = null,
+            modifier = Modifier.size(120.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column {
+            Text(text = activity.name, style = MaterialTheme.typography.titleMedium)
+            Text(text = activity.category, style = MaterialTheme.typography.bodySmall)
+            Text(text = activity.description, style = MaterialTheme.typography.bodyMedium)
+            Text(text = activity.address, style = MaterialTheme.typography.bodySmall)
+        }
     }
 }
