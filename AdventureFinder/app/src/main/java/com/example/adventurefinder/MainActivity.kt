@@ -62,7 +62,10 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import android.content.IntentSender
+import android.location.Address
+import android.location.Geocoder
 import android.location.LocationManager
+import androidx.compose.foundation.border
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.filled.List
 import com.google.android.gms.common.api.ApiException
@@ -70,6 +73,8 @@ import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.LocationSettingsRequest
 import com.google.android.gms.location.LocationSettingsStatusCodes
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 
 
@@ -187,6 +192,7 @@ fun AdventureFinderApp() {
     var loggedInUsername by remember { mutableStateOf("") }
     var isLoggedIn by remember { mutableStateOf(false) }
     var isDarkTheme by remember { mutableStateOf(false) }
+    var wishlist by remember { mutableStateOf<List<AdventureActivity>>(emptyList()) }
 
     val appTheme = if (isDarkTheme) {
         darkColorScheme()
@@ -195,6 +201,8 @@ fun AdventureFinderApp() {
     }
 
     MaterialTheme(colorScheme = appTheme) {
+        val activities = remember { getActivitiesList() } // Список активностей
+
         Scaffold(
             bottomBar = {
                 if (isLoggedIn) {
@@ -217,8 +225,10 @@ fun AdventureFinderApp() {
                 }
                 composable("registration") { RegistrationScreen(navController) }
                 composable("profile") { ProfileScreen(username = loggedInUsername) }
-                composable("map") { MapScreen() }
-                composable("wishlist") { Text("My Wishlist Screen") }
+                composable("map") { MapScreen(activities = activities) }
+                composable("wishlist") {
+                    WishlistScreen(wishlist = wishlist)
+                }
                 composable("settings") {
                     SettingsScreen(
                         onLogout = {
@@ -228,7 +238,18 @@ fun AdventureFinderApp() {
                         onThemeChange = { isDarkTheme = !isDarkTheme }
                     )
                 }
-                composable("activities") { ActivitiesScreen() }
+                composable("activities") {
+                    ActivitiesScreen(
+                        activities = activities,
+                        onLikeClick = { activity ->
+                            wishlist = if (wishlist.contains(activity)) {
+                                wishlist.filter { it != activity }
+                            } else {
+                                wishlist + activity
+                            }
+                        }
+                    )
+                }
             }
         }
     }
@@ -437,7 +458,7 @@ fun ProfileScreen(username: String) {
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun MapScreen() {
+fun MapScreen(activities: List<AdventureActivity> = emptyList()) {
     val permissionsState = rememberMultiplePermissionsState(
         listOf(
             Manifest.permission.ACCESS_FINE_LOCATION,
@@ -519,7 +540,41 @@ fun MapScreen() {
                 icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE) // Синяя метка
             )
         }
+        activities.forEach { activity ->
+            val address = activity.address
+            getLatLngFromAddress(context, address)?.let { latLng ->
+                Marker(
+                    state = MarkerState(position = latLng),
+                    title = activity.name,
+                    snippet = activity.address
+                )
+            }
+        }
     }
+}
+
+fun getLatLngFromAddress(context: Context, strAddress: String): LatLng? {
+    val coder = Geocoder(context)
+    val address: List<Address>?
+    var p1: LatLng? = null
+
+    try {
+        // Получаем список адресов из геокодера
+        address = coder.getFromLocationName(strAddress, 5)
+
+        if (address == null) {
+            return null
+        }
+
+        // Берем первый адрес (обычно самый точный)
+        val location: Address = address[0]
+        p1 = LatLng(location.latitude, location.longitude)
+
+    } catch (ex: Exception) {
+        ex.printStackTrace()
+    }
+
+    return p1
 }
 
 @Composable
@@ -581,19 +636,9 @@ fun BottomNavigationBar(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-// Переименуйте ваш класс Activity в AdventureActivity
-data class AdventureActivity(
-    val name: String,
-    val category: String,
-    val description: String,
-    val address: String,
-    val imageRes: Int
-)
-
-@Composable
-fun ActivitiesScreen() {
-    val activities = listOf(
+// Функция для получения списка активностей
+fun getActivitiesList(): List<AdventureActivity> {
+    return listOf(
         AdventureActivity(
             name = "Karting",
             category = "Race",
@@ -623,22 +668,40 @@ fun ActivitiesScreen() {
             imageRes = R.drawable.icering
         )
     )
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+// Переименуйте ваш класс Activity в AdventureActivity
+data class AdventureActivity(
+    val name: String,
+    val category: String,
+    val description: String,
+    val address: String,
+    val imageRes: Int
+)
+
+@Composable
+fun ActivitiesScreen(activities: List<AdventureActivity>, onLikeClick: (AdventureActivity) -> Unit) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp)
     ) {
         items(activities) { activity ->
-            ActivityItem(activity)
+            ActivityItem(activity, onLikeClick)
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-fun ActivityItem(activity: AdventureActivity) {
+fun ActivityItem(activity: AdventureActivity, onLikeClick: (AdventureActivity) -> Unit) {
+    var isLiked by remember { mutableStateOf(false) }
+
     Row(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, Color.LightGray, RoundedCornerShape(8.dp))
+            .padding(16.dp)
     ) {
         Image(
             painter = painterResource(id = activity.imageRes),
@@ -646,11 +709,36 @@ fun ActivityItem(activity: AdventureActivity) {
             modifier = Modifier.size(120.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(text = activity.name, style = MaterialTheme.typography.titleMedium)
             Text(text = activity.category, style = MaterialTheme.typography.bodySmall)
             Text(text = activity.description, style = MaterialTheme.typography.bodyMedium)
             Text(text = activity.address, style = MaterialTheme.typography.bodySmall)
+        }
+        IconButton(
+            onClick = {
+                isLiked = !isLiked
+                onLikeClick(activity)
+            }
+        ) {
+            Icon(
+                imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = if (isLiked) "Unlike" else "Like",
+                tint = if (isLiked) Color.Red else Color.Gray
+            )
+        }
+    }
+}
+
+@Composable
+fun WishlistScreen(wishlist: List<AdventureActivity>) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp)
+    ) {
+        items(wishlist) { activity ->
+            ActivityItem(activity, onLikeClick = {})
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
