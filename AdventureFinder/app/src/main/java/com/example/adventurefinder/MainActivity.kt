@@ -23,14 +23,12 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.ui.graphics.ImageBitmap
 import kotlinx.coroutines.launch
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.background
@@ -45,9 +43,19 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.ui.graphics.Color
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapType
+import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 
 
 val Context.dataStore by preferencesDataStore("user_data")
+val userImageKey = intPreferencesKey("user_image")
 
 
 class MainActivity : ComponentActivity() {
@@ -55,42 +63,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AdventureFinderApp()
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AdventureFinderApp() {
-    val navController = rememberNavController()
-    var loggedInUsername by remember { mutableStateOf("") }
-    var isLoggedIn by remember { mutableStateOf(false) }
-
-    Scaffold(
-        bottomBar = {
-            if (isLoggedIn) {
-                BottomNavigationBar(
-                    modifier = Modifier.background(Color.White, shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                    onClick = { screen ->
-                        navController.navigate(screen)
-                    }
-                )
-            }
-        }
-    ) { innerPadding ->
-        NavHost(navController = navController, startDestination = "login") {
-            composable("login") {
-                LoginScreen(navController, loggedInUsername) { username ->
-                    loggedInUsername = username
-                    isLoggedIn = true
-                    navController.navigate("profile")
-                }
-            }
-            composable("registration") { RegistrationScreen(navController) }
-            composable("profile") { ProfileScreen(username = loggedInUsername) }
-            composable("map") { Text("Map Screen") }
-            composable("wishlist") { Text("My Wishlist Screen") }
-            composable("settings") { SettingsScreen(onLogout = { isLoggedIn = false; navController.navigate("login") }) }
         }
     }
 }
@@ -182,6 +154,42 @@ fun LoginScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+fun AdventureFinderApp() {
+    val navController = rememberNavController()
+    var loggedInUsername by remember { mutableStateOf("") }
+    var isLoggedIn by remember { mutableStateOf(false) }
+
+    Scaffold(
+        bottomBar = {
+            if (isLoggedIn) {
+                BottomNavigationBar(
+                    modifier = Modifier.background(Color.White, shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
+                    onClick = { screen ->
+                        navController.navigate(screen)
+                    }
+                )
+            }
+        }
+    ) { innerPadding ->
+        NavHost(navController = navController, startDestination = "login") {
+            composable("login") {
+                LoginScreen(navController, loggedInUsername) { username ->
+                    loggedInUsername = username
+                    isLoggedIn = true
+                    navController.navigate("profile")
+                }
+            }
+            composable("registration") { RegistrationScreen(navController) }
+            composable("profile") { ProfileScreen(username = loggedInUsername) }
+            composable("map") { MapScreen() } // Замените Text("Map Screen") на MapScreen()
+            composable("wishlist") { Text("My Wishlist Screen") }
+            composable("settings") { SettingsScreen(onLogout = { isLoggedIn = false; navController.navigate("login") }) }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun RegistrationScreen(navController: NavHostController) {
     val context = LocalContext.current
     val dbHelper = UserDatabaseHelper(context)
@@ -240,7 +248,7 @@ fun ProfileScreen(username: String) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var userDescription by remember { mutableStateOf("About me: ") }
-    var selectedImage by remember { mutableStateOf(R.drawable.lonely_kitten) }
+    var selectedImage by remember { mutableStateOf(R.drawable.my_lonely_kitten) }
     var isEditing by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) } // Состояние для диалога
     val dbHelper = UserDatabaseHelper(context)
@@ -254,13 +262,29 @@ fun ProfileScreen(username: String) {
     LaunchedEffect(username) {
         context.dataStore.data.collect { preferences ->
             userDescription = preferences[userDescriptionKey] ?: "About me: "
-            selectedImage = preferences[userImageKey] ?: R.drawable.lonely_kitten
+            selectedImage = preferences[userImageKey] ?: R.drawable.my_lonely_kitten
         }
     }
 
+// Сохранение выбранного изображения в DataStore
+    Button(
+        onClick = {
+            isEditing = false
+            scope.launch {
+                context.dataStore.edit { preferences ->
+                    preferences[userDescriptionKey] = userDescription
+                    preferences[userImageKey] = selectedImage
+                }
+            }
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Save")
+    }
+
     val imageOptions = listOf(
-        R.drawable.feel_good,
-        R.drawable.lonely_kitten,
+        R.drawable.my_feel_good,
+        R.drawable.my_lonely_kitten,
         // добавь сюда ID своих картинок
     )
 
@@ -340,6 +364,11 @@ fun ProfileScreen(username: String) {
                                         .size(60.dp)
                                         .clickable {
                                             selectedImage = imageRes
+                                            scope.launch {
+                                                context.dataStore.edit { preferences ->
+                                                    preferences[userImageKey] = selectedImage
+                                                }
+                                            }
                                             showDialog = false
                                         }
                                 )
@@ -356,6 +385,26 @@ fun ProfileScreen(username: String) {
                 )
             }
         }
+    }
+}
+
+@Composable
+fun MapScreen() {
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(LatLng(40.730610, -73.935242), 10f)
+    }
+
+    GoogleMap(
+        modifier = Modifier.fillMaxSize(),
+        cameraPositionState = cameraPositionState,
+        properties = MapProperties(mapType = MapType.NORMAL),
+        uiSettings = MapUiSettings(zoomControlsEnabled = false)
+    ) {
+        Marker(
+            state = MarkerState(position = LatLng(40.730610, -73.935242)),
+            title = "New York City",
+            snippet = "The Big Apple"
+        )
     }
 }
 
