@@ -615,8 +615,8 @@ fun BottomNavigationBar(
     currentRoute: String,
     isDarkTheme: Boolean
 ) {
-    val selectedItemSize = 28.dp
-    val unselectedItemSize = 20.dp
+    val selectedItemSize = 32.dp
+    val unselectedItemSize = 23.dp
 
     val activeColor = if (isDarkTheme) activeColorDark else activeColorLight
     val inactiveColor = if (isDarkTheme) inactiveColorDark else inactiveColorLight
