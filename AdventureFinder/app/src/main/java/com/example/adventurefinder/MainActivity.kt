@@ -65,7 +65,11 @@ import android.content.IntentSender
 import android.location.Address
 import android.location.Geocoder
 import android.location.LocationManager
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.filled.List
 import com.google.android.gms.common.api.ApiException
@@ -77,6 +81,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import kotlinx.coroutines.delay
 
 
 val Context.dataStore by preferencesDataStore("user_data")
@@ -201,7 +206,7 @@ fun AdventureFinderApp() {
     val dbHelper = UserDatabaseHelper(LocalContext.current)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-
+    var splashFinished by remember { mutableStateOf(false) }
 
     LaunchedEffect(loggedInUsername) {
         if (loggedInUsername.isNotEmpty()) {
@@ -217,7 +222,6 @@ fun AdventureFinderApp() {
 
     MaterialTheme(colorScheme = appTheme) {
         val activities = remember { getActivitiesList() }
-        val currentRoute = navController.currentBackStackEntry?.destination?.route ?: "login" // Используем тот же navController
 
         Scaffold(
             bottomBar = {
@@ -233,7 +237,15 @@ fun AdventureFinderApp() {
                 }
             }
         ) { innerPadding ->
-            NavHost(navController = navController, startDestination = "login") {
+            NavHost(navController = navController, startDestination = "splash") {
+                composable("splash") {
+                    SplashScreen(onAnimationFinished = {
+                        splashFinished = true
+                        navController.navigate("login") {
+                            popUpTo("splash") { inclusive = true }
+                        }
+                    })
+                }
                 composable("login") {
                     LoginScreen(navController, loggedInUsername) { username ->
                         loggedInUsername = username
@@ -267,7 +279,6 @@ fun AdventureFinderApp() {
                         }
                     )
                 }
-
                 composable("wishlist") {
                     WishlistScreen(
                         wishlist = wishlist,
@@ -360,7 +371,7 @@ fun ProfileScreen(username: String) {
 
         context.dataStore.data.collect { preferences ->
             userDescription = preferences[userDescriptionKey] ?: "About me: "
-            selectedImage = preferences[userImageKey] ?: R.drawable.my_lonely_kitten
+            selectedImage = preferences[userImageKey] ?: R.drawable.parachute
         }
     }
 
@@ -381,9 +392,15 @@ fun ProfileScreen(username: String) {
     }
 
     val imageOptions = listOf(
-        R.drawable.my_feel_good,
-        R.drawable.my_lonely_kitten,
-        // добавь сюда ID своих картинок
+        R.drawable.climbing,
+        R.drawable.equestrian,
+        R.drawable.flyboard,
+        R.drawable.marathon,
+        R.drawable.motocross,
+        R.drawable.parachute,
+        R.drawable.running_man,
+        R.drawable.skydiving,
+        R.drawable.surfing
     )
 
     Scaffold(
@@ -889,5 +906,42 @@ fun WishlistScreen(wishlist: List<AdventureActivity>, onLikeClick: (AdventureAct
             ActivityItem(activity, isLiked = true, onLikeClick = onLikeClick)
             Spacer(modifier = Modifier.height(16.dp))
         }
+    }
+}
+
+@Composable
+fun SplashScreen(onAnimationFinished: () -> Unit) {
+    var startAnimation by remember { mutableStateOf(false) }
+    val alphaAnim = animateFloatAsState(
+        targetValue = if (startAnimation) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = 3000,
+            easing = FastOutSlowInEasing
+        )
+    )
+
+    LaunchedEffect(key1 = true) {
+        startAnimation = true
+        delay(4000)
+        onAnimationFinished()
+    }
+
+    Splash(alpha = alphaAnim.value)
+}
+
+@Composable
+fun Splash(alpha: Float) {
+    Box(
+        modifier = Modifier
+            .background(if (isSystemInDarkTheme()) Color.Black else Color.White)
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "Logo",
+            modifier = Modifier.size(300.dp),
+            alpha = alpha
+        )
     }
 }
