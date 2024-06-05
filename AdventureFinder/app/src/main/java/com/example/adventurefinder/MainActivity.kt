@@ -54,6 +54,8 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import android.Manifest
 import android.app.Activity
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import androidx.compose.runtime.DisposableEffect
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -65,6 +67,7 @@ import android.content.IntentSender
 import android.location.Address
 import android.location.Geocoder
 import android.location.LocationManager
+import android.os.Build
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -79,7 +82,11 @@ import com.google.android.gms.location.LocationSettingsStatusCodes
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.google.accompanist.permissions.PermissionStatus
+import com.google.accompanist.permissions.rememberPermissionState
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import kotlinx.coroutines.delay
 
@@ -103,9 +110,18 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun SettingsScreen(onLogout: () -> Unit, onThemeChange: () -> Unit) {
+    val context = LocalContext.current
+    val notificationPermissionState = rememberPermissionState(
+        android.Manifest.permission.POST_NOTIFICATIONS
+    )
+
+    LaunchedEffect(Unit) {
+        notificationPermissionState.launchPermissionRequest()
+    }
+
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text("Settings") }) }
     ) { innerPadding ->
@@ -121,6 +137,18 @@ fun SettingsScreen(onLogout: () -> Unit, onThemeChange: () -> Unit) {
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Change Theme")
+            }
+            Button(
+                onClick = {
+                    if (notificationPermissionState.status == PermissionStatus.Granted) {
+                        sendNotification(context)
+                    } else {
+                        notificationPermissionState.launchPermissionRequest()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Send Adventure Notification")
             }
             Spacer(modifier = Modifier.height(16.dp))
             Button(
@@ -944,4 +972,29 @@ fun Splash(alpha: Float) {
             alpha = alpha
         )
     }
+}
+
+private fun sendNotification(context: Context) {
+    val channelId = "adventure_channel"
+    val notificationId = 1
+
+    val builder = NotificationCompat.Builder(context, channelId)
+        .setSmallIcon(R.drawable.parachute)
+        .setContentTitle("Adventure Finder")
+        .setContentText("Where are you? Adventure awaits you!")
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+
+    val notificationManager = NotificationManagerCompat.from(context)
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val channelName = "Adventure Channel"
+        val channelDescription = "Channel for adventure notifications"
+        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val channel = NotificationChannel(channelId, channelName, importance).apply {
+            description = channelDescription
+        }
+        notificationManager.createNotificationChannel(channel)
+    }
+
+    notificationManager.notify(notificationId, builder.build())
 }

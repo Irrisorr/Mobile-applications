@@ -69,6 +69,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.4.0")
     implementation("com.google.accompanist:accompanist-permissions:0.28.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
+    implementation("androidx.core:core-ktx:1.10.1")
+    implementation("com.google.accompanist:accompanist-permissions:0.29.1-alpha")
 
 
     testImplementation(libs.junit)
