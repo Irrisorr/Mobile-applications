@@ -383,7 +383,7 @@ fun ProfileScreen(username: String) {
     var userDescription by remember { mutableStateOf("About me: ") }
     var selectedImage by remember { mutableStateOf(R.drawable.my_lonely_kitten) }
     var isEditing by remember { mutableStateOf(false) }
-    var showDialog by remember { mutableStateOf(false) } // Состояние для диалога
+    var showDialog by remember { mutableStateOf(false) }
     val dbHelper = UserDatabaseHelper(context)
     val user = dbHelper.getUser(username)
     val registrationDate = user?.registrationDate ?: "Unknown"
@@ -391,7 +391,6 @@ fun ProfileScreen(username: String) {
     val userDescriptionKey = stringPreferencesKey("user_description_$username")
     val userImageKey = intPreferencesKey("user_image_$username")
 
-    // Загрузка описания из DataStore
     LaunchedEffect(username) {
         val dbHelper = UserDatabaseHelper(context)
         val user = dbHelper.getUser(username)
@@ -403,7 +402,6 @@ fun ProfileScreen(username: String) {
         }
     }
 
-// Сохранение выбранного изображения в DataStore
     Button(
         onClick = {
             isEditing = false
@@ -454,7 +452,7 @@ fun ProfileScreen(username: String) {
                 modifier = Modifier
                     .size(120.dp)
                     .clickable {
-                        showDialog = true // Показываем диалог при клике на изображение
+                        showDialog = true
                     }
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -492,7 +490,6 @@ fun ProfileScreen(username: String) {
                 }
             }
 
-            // Диалог для выбора изображения
             if (showDialog) {
                 AlertDialog(
                     onDismissRequest = { showDialog = false },
@@ -613,7 +610,7 @@ fun MapScreen(activities: List<AdventureActivity> = emptyList()) {
                 state = MarkerState(position = location),
                 title = "Your Location",
                 snippet = "This is your current location",
-                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE) // Синяя метка
+                icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)
             )
         }
         activities.forEach { activity ->
@@ -635,14 +632,12 @@ fun getLatLngFromAddress(context: Context, strAddress: String): LatLng? {
     var p1: LatLng? = null
 
     try {
-        // Получаем список адресов из геокодера
         address = coder.getFromLocationName(strAddress, 5)
 
         if (address == null) {
             return null
         }
 
-        // Берем первый адрес (обычно самый точный)
         val location: Address = address[0]
         p1 = LatLng(location.latitude, location.longitude)
 
@@ -767,7 +762,6 @@ fun BottomNavigationBar(
     }
 }
 
-// Функция для получения списка активностей
 fun getActivitiesList(): List<AdventureActivity> {
     return listOf(
         AdventureActivity(
@@ -809,7 +803,6 @@ fun getActivitiesList(): List<AdventureActivity> {
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-// Переименуйте ваш класс Activity в AdventureActivity
 data class AdventureActivity(
     val name: String,
     val category: String,
@@ -825,7 +818,7 @@ fun ActivitiesScreen(
     onLikeClick: (AdventureActivity) -> Unit
 ) {
     var selectedCategory by remember { mutableStateOf<String?>(null) }
-    var expanded by remember { mutableStateOf(false) } // Состояние для DropdownMenu
+    var expanded by remember { mutableStateOf(false) }
 
     val filteredActivities = if (selectedCategory != null) {
         activities.filter { it.category == selectedCategory }
@@ -834,7 +827,6 @@ fun ActivitiesScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // DropdownMenu для выбора категории
         Box(modifier = Modifier.padding(8.dp)) {
             Button(
                 onClick = { expanded = true },
@@ -855,9 +847,9 @@ fun ActivitiesScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 DropdownMenuItem(
-                    text = { Text("All Categories") }, // Пункт "Все категории"
+                    text = { Text("All Categories") },
                     onClick = {
-                        selectedCategory = null // Сбрасываем фильтр
+                        selectedCategory = null
                         expanded = false
                     }
                 )

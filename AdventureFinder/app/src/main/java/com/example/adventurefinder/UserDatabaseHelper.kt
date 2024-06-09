@@ -14,7 +14,7 @@ class UserDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
         const val COLUMN_ID = "id"
         const val COLUMN_USERNAME = "username"
         const val COLUMN_PASSWORD = "password"
-        const val COLUMN_REGISTRATION_DATE = "registration_date" // Новое поле
+        const val COLUMN_REGISTRATION_DATE = "registration_date"
     }
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -65,7 +65,7 @@ class UserDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_
                 cursor.getInt(0),
                 cursor.getString(1),
                 cursor.getString(2),
-                cursor.getString(3) // Получаем дату регистрации
+                cursor.getString(3)
             )
         } else {
             null
@@ -110,5 +110,5 @@ data class User(
     val id: Int = 0,
     val username: String,
     val password: String,
-    val registrationDate: String? = null // Добавлено поле даты регистрации
+    val registrationDate: String? = null
 )
